@@ -1,7 +1,32 @@
 #!/usr/bin/env ruby
+require 'csv'
+
+usage =<<EOF
+
+      #{$0} txt bed csv
+
+      ------------------------------------------------------
+      * txt      :: text_file
+      * bed      :: bed_file
+      * csv      :: csv_file
+      ------------------------------------------------------
+
+      - VERSION 5/16/2013 ----------------------------------
+
+      ------------------------------------------------------
+
+                                                       by khayer
+
+EOF
+
+if ARGV.length != 3
+  puts usage
+  exit
+end
 
 text_file = ARGV[0]
 bed_file = ARGV[1]
+csv_file = ARGV[2]
 
 all_genes = Hash.new
 
@@ -12,26 +37,66 @@ File.open(bed_file).each do |line|
   all_genes[fields[1]] = fields[-4]
 end
 
-File.open(text_file).each do |line|
-  next unless line =~ /^NM/
-  line.chomp!
-  fields = line.split("\t")
-  skip = false
-  (1..4).each do |i|
-    mut = fields[i].to_f
-    sib = fields[i+4].to_f
-    mut = 0.01 if mut == 0.0
-    sib = 0.01 if sib == 0.0
-    fold_change = sib/mut
-    if fold_change == 1.0
-      skip = true
-      break
+CSV.open(csv_file, "wb") do |csv|
+  csv << ["GeneID","GenName","logRPKM_MUTAS","logRPKM_MUTAS3",
+    "logRPKM_MUTPS","logRPKM_MUTPS3","logRPKM_SIBAS",
+    "logRPKM_SIBAS3","logRPKM_SIBPS","logRPKM_SIBPS3",
+    "FC:MUTAS|SIBAS","log2_FC:MUTAS|SIBAS",
+    "FC:MUTAS3|SIBAS3","log2_FC:MUTAS3|SIBAS3",
+    "FC:MUTPS|SIBPS","log2_FC:MUTPS|SIBPS",
+    "FC:MUTPS3|SIBPS3","log2_FC:MUTPS3|SIBPS3",
+    "FC:MUTAS|MUTPS","log2_FC:MUTAS|MUTPS",
+    "FC:MUTAS3|MUTPS3","log2_FC:MUTAS3|MUTPS3",
+    "FC:FC:SIBAS|SIBPS","log2_FC:SIBAS|SIBPS",
+    "FC:SIBAS3|SIBPS3","log2_FC:SIBAS3|SIBPS3"]
+  File.open(text_file).each do |line|
+    next unless line =~ /^NM/
+    line.chomp!
+    fields = line.split("\t")
+    skip = false
+    (1..4).each do |i|
+      mut = fields[i].to_f
+      sib = fields[i+4].to_f
+      mut = 0.1 if mut == 0.0
+      sib = 0.1 if sib == 0.0
+      fold_change = sib/mut
+      if fold_change == 1.0
+        skip = true
+        break
+      end
+      fields << fold_change
+      fields << Math.log2(fold_change)
     end
-    fields << fold_change
-    fields << Math.log2(fold_change)
+    # FC:MUTAS|MUTPS
+    (1..2).each do |i|
+      mut = fields[i].to_f
+      sib = fields[i+2].to_f
+      mut = 0.01 if mut == 0.0
+      sib = 0.01 if sib == 0.0
+      fold_change = sib/mut
+      if fold_change == 1.0
+        skip = true
+        break
+      end
+      fields << fold_change
+      fields << Math.log2(fold_change)
+    end
+    (5..6).each do |i|
+      mut = fields[i].to_f
+      sib = fields[i+2].to_f
+      mut = 0.01 if mut == 0.0
+      sib = 0.01 if sib == 0.0
+      fold_change = sib/mut
+      if fold_change == 1.0
+        skip = true
+        break
+      end
+      fields << fold_change
+      fields << Math.log2(fold_change)
+    end
+    next if skip
+    identifier = fields[0].split("[")[0]
+    fields.insert(1,all_genes[identifier.delete("(refseq)")])
+    csv << fields #.join("\t")
   end
-  next if skip
-  identifier = fields[0].split("[")[0]
-  fields.insert(1,all_genes[identifier.delete("(refseq)")])
-  puts fields.join("\t")
 end
