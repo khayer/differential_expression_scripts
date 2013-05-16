@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+text_file = ARGV[0]
+bed_file = ARGV[1]
+
+all_genes = Hash.new
+
+File.open(bed_file).each do |line|
+  next if line =~ /^#/
+  line.chomp!
+  fields = line.split("\t")
+  all_genes[fields[1]] = fields[-4]
+end
+
+File.open(text_file).each do |line|
+  next unless line =~ /^NM/
+  line.chomp!
+  fields = line.split("\t")
+  skip = false
+  (1..4).each do |i|
+    mut = fields[i].to_f
+    sib = fields[i+4].to_f
+    mut = 0.01 if mut == 0.0
+    sib = 0.01 if sib == 0.0
+    fold_change = sib/mut
+    if fold_change == 1.0
+      skip = true
+      break
+    end
+    fields << fold_change
+    fields << Math.log2(fold_change)
+  end
+  next if skip
+  identifier = fields[0].split("[")[0]
+  fields.insert(1,all_genes[identifier.delete("(refseq)")])
+  puts fields.join("\t")
+end

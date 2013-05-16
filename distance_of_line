@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+require 'spreadsheet'
+require 'csv'
+
+usage =<<EOF
+
+      #{$0} txt m x0 fS sS csv
+
+      ------------------------------------------------------
+      * txt      :: text_file
+      * m        :: sloop
+      * x0       :: where is pos on y-axis
+      * fS       :: position in txt 1.Sample
+      * sS       :: position in txt 2.Sample
+      * csv      :: out_file
+      ------------------------------------------------------
+
+      - VERSION 4/5/2013 -----------------------------------
+
+      ------------------------------------------------------
+
+                                                       by khayer
+
+EOF
+
+if ARGV.length != 5
+  puts usage
+  exit
+end
+
+# y = mx + x0
+# y - x0 = mx
+# y - mx -x0 = 0
+# (y)
+
+# X3,Y3 is searched
+def dist(x,y)
+  upper = (-$m*x+1*y-$x0).abs
+  lower = Math.sqrt($m*$m+1).to_f
+  upper / lower
+end
+
+#def calculate_y(x)
+ # $m * x + $x0
+#end
+
+text_file = ARGV[0]
+$m = ARGV[1].to_f
+$x0 = ARGV[2].to_f
+first_sample_position = ARGV[3].to_i
+second_sample_position = ARGV[4].to_i
+out_file = CSV.open(ARGV[5],"w")
+out_file.write
+
+File.open(text_file).each do |line|
+  next unless line =~ /^NM/
+  line.chomp!
+  fields = line.split("\t")
+  x3 = fields[first_sample_position].to_f
+  #puts x3
+  y3 = fields[second_sample_position].to_f
+  #puts y3
+  #x1 = 1.0
+  #y1 = calculate_y(x1)
+  #x2 = 40.0
+  #y2 = calculate_y(x2)
+  puts "#{fields[0]}\t#{fields[1]}\t#{dist(x3,y3)}\t#{x3}\t#{y3}"
+end
