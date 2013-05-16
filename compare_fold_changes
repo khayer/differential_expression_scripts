@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+require 'csv'
+
+usage =<<EOF
+
+      #{$0} in.csv col1 col2 col3 col4 out.csv
+
+      ------------------------------------------------------
+      * in.csv   :: in_csv_file
+      * col1     :: e.g. "log2_FC:MUTAS|MUTPS"
+      * col2     :: e.g. "log2_FC:SIBAS|SIBPS"
+      * col3     :: e.g. "UCount_MUTAS"
+      * col4     :: e.g. "UCount_MUTPS"
+      * col5     :: e.g. "UCount_SIBAS"
+      * col6     :: e.g. "UCount_SIBPS"
+      * out.csv  :: out_csv_file
+      ------------------------------------------------------
+
+      - VERSION 5/16/2013 ----------------------------------
+
+      Note: only works with output of add_refseq_gen_names
+      script (CVS_file)
+
+      ------------------------------------------------------
+
+                                                       by khayer
+
+EOF
+
+if ARGV.length != 8
+  puts usage
+  exit
+end
+
+in_csv_file = ARGV[0]
+col1 = ARGV[1]
+col2 = ARGV[2]
+c_MUTAS = ARGV[3]
+c_MUTPS = ARGV[4]
+c_SIBAS = ARGV[5]
+c_SIBPS = ARGV[6]
+out_csv_file = ARGV[7]
+
+i = 0
+stddev = 1.5
+CSV.open(out_csv_file, "wb") do |csv|
+  csv << ["GeneID","GenName",
+    "FC:MUTAS|MUTPS-FC:SIBAS|SIBPS","logRPKM_MUTAS",
+    "logRPKM_MUTPS","logRPKM_SIBAS","logRPKM_SIBPS",
+    "FC:MUTAS|SIBAS","log2_FC:MUTAS|SIBAS",
+    "FC:MUTPS|SIBPS","log2_FC:MUTPS|SIBPS",
+    "FC:MUTAS|MUTPS","log2_FC:MUTAS|MUTPS",
+    "FC:SIBAS|SIBPS","log2_FC:SIBAS|SIBPS",
+    "UCount_MUTAS","UCount_MUTPS","Ucount_SIBAS",
+    "UCount_SIBPS"]
+  CSV.foreach(in_csv_file, headers: true) do |row|
+
+    next if (row[col1].to_f - row[col2].to_f).abs < 1.0
+    #puts row[col1].to_f - row[col2].to_f
+    #puts row["GeneID"]
+    #puts row[col1]
+    #puts row[col2]
+    #STDIN.gets
+    #if i == 100
+    #  STDIN.gets
+    #  i = 0
+    #end
+    #i += 1
+    diff = (row[col1].to_f - row[col2].to_f).abs
+    csv << [row["GeneID"],row["GenName"],diff,
+      row["logRPKM_MUTAS"],
+      row["logRPKM_MUTPS"],row["logRPKM_SIBAS"],
+      row["logRPKM_SIBPS"],row["FC:MUTAS|SIBAS"],
+      row["log2_FC:MUTAS|SIBAS"],row["FC:MUTPS|SIBPS"],
+      row["log2_FC:MUTPS|SIBPS"],row["FC:MUTAS|MUTPS"],
+      row["log2_FC:MUTAS|MUTPS"],row["FC:FC:SIBAS|SIBPS"],
+      row["log2_FC:SIBAS|SIBPS"],row["UCount_MUTAS"],
+      row["UCount_MUTPS"],row["Ucount_SIBAS"],
+      row["UCount_SIBPS"]]
+  end
+end

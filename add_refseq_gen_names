@@ -48,11 +48,17 @@ CSV.open(csv_file, "wb") do |csv|
     "FC:MUTAS|MUTPS","log2_FC:MUTAS|MUTPS",
     "FC:MUTAS3|MUTPS3","log2_FC:MUTAS3|MUTPS3",
     "FC:FC:SIBAS|SIBPS","log2_FC:SIBAS|SIBPS",
-    "FC:SIBAS3|SIBPS3","log2_FC:SIBAS3|SIBPS3"]
+    "FC:SIBAS3|SIBPS3","log2_FC:SIBAS3|SIBPS3",
+    "UCount_MUTAS","UCount_MUTAS3","UCount_MUTPS",
+    "Ucount_MUTPS3","Ucount_SIBAS","UCount_SIBAS3",
+    "UCount_SIBPS","UCount_SIBPS3"]
   File.open(text_file).each do |line|
+
     next unless line =~ /^NM/
+
     line.chomp!
     fields = line.split("\t")
+    new_fields = fields[0..8]
     skip = false
     (1..4).each do |i|
       mut = fields[i].to_f
@@ -64,8 +70,8 @@ CSV.open(csv_file, "wb") do |csv|
         skip = true
         break
       end
-      fields << fold_change
-      fields << Math.log2(fold_change)
+      new_fields << fold_change
+      new_fields << Math.log2(fold_change)
     end
     # FC:MUTAS|MUTPS
     (1..2).each do |i|
@@ -78,8 +84,8 @@ CSV.open(csv_file, "wb") do |csv|
         skip = true
         break
       end
-      fields << fold_change
-      fields << Math.log2(fold_change)
+      new_fields << fold_change
+      new_fields << Math.log2(fold_change)
     end
     (5..6).each do |i|
       mut = fields[i].to_f
@@ -91,12 +97,15 @@ CSV.open(csv_file, "wb") do |csv|
         skip = true
         break
       end
-      fields << fold_change
-      fields << Math.log2(fold_change)
+      new_fields << fold_change
+      new_fields << Math.log2(fold_change)
     end
     next if skip
     identifier = fields[0].split("[")[0]
-    fields.insert(1,all_genes[identifier.delete("(refseq)")])
-    csv << fields #.join("\t")
+    new_fields.insert(1,all_genes[identifier.delete("(refseq)")])
+    # Add UCount
+    new_fields << fields[9..16]
+    new_fields.flatten!
+    csv << new_fields #.join("\t")
   end
 end
